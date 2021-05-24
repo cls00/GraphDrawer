@@ -1,9 +1,18 @@
-var scene, renderer, camera, clock, texture;
-var points;
+var scene, renderer, labelRenderer, camera, clock, texture;
+var points, geometry, particles, shaderMaterial;
 var raycaster;
 var quad;
 var controls;
 var mouse = { x: 0, y: 0 };
+
+var shapes, geom, mat, mesh;
+
+
+
+//selector
+var geoSphere, smaterial, sphere, textmesh1;
+
+let pointer;
 
 function vShader() {
     return `
@@ -54,6 +63,8 @@ setup_graph();
 
 function init() {
     clock = new THREE.Clock();
+
+    //renderer
     renderer = new THREE.WebGLRenderer({ antialias: true });
     var width = window.innerWidth;
     var height = window.innerHeight;
@@ -70,13 +81,13 @@ function init() {
     camera.lookAt(new THREE.Vector3(0, 0, 0));
 
     // control settings
-    controls = new THREE.FlyControls(camera, renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.movementSpeed = 50;
     controls.rollSpeed = Math.PI / 12;
 
     //particles
-    var particleNumber = 2000000;
-    var geometry = new THREE.BufferGeometry();
+    //var particleNumber = 2000000;
+    geometry = new THREE.BufferGeometry();
     var vertices = [];
     var sizes = []
     texture = new THREE.TextureLoader().load("./img/ball.png");
@@ -90,16 +101,16 @@ function init() {
         z = coord[2] * 200 - 100;
         vertices.push(x, y, z);
 
-        color.setHSL(0.2, 1.0, 0.5);
+        color.setHSL(0.8, 0.8, 0.8);
         colors.push(color.r, color.g, color.b);
-        sizes.push(200);
+        sizes.push(150);
     }
 
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
-    const shaderMaterial = new THREE.ShaderMaterial({
+    shaderMaterial = new THREE.ShaderMaterial({
 
         uniforms: { pointTexture: { value: new THREE.TextureLoader().load("./img/ball.png") } },
         vertexShader: vShader(),
@@ -135,33 +146,78 @@ function init() {
 
     // interactor
     raycaster = new THREE.Raycaster();
+    raycaster.params.Points.threshold = 60;
+    pointer = new THREE.Vector2();
 
-    // selection
 
+
+    // selection 
+
+    geoSphere = new THREE.SphereGeometry(22, 32, 32);
+    smaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    sphere = new THREE.Mesh(geoSphere, smaterial);
+    scene.add(sphere);
 
 
     //keyboard listener
     document.addEventListener("keydown", keyDownTextField, false);
-    document.addEventListener('mousedown', onDocumentMouseDown, false);
+    //document.addEventListener('mousedown', onDocumentMouseDown, false);
+    document.addEventListener('pointermove', onPointerMove);
+
+
+    //text test
+    var text = "LALALAgthyjutioip;['poiuytrgrtgtr a;lsjdlsajd dljsa \\n lkdjalsjdlaj j dlkajl jdaljdlaj";
+    var canvas1 = document.createElement('canvas');
+    var context1 = canvas1.getContext('2d');
+    context1.font = "Bold 40px Arial";
+    context1.fillStyle = "rgba(255,255,0,0.95)";
+    context1.fillText(text, 3, 50);
+
+    var texture1 = new THREE.Texture(canvas1);
+    texture1.needsUpdate = true;
+
+    var material1 = new THREE.MeshBasicMaterial({ map: texture1, side: THREE.DoubleSide });
+
+
+
+    material1.transparent = true;
+
+    textmesh1 = new THREE.Mesh(
+        new THREE.PlaneGeometry(canvas1.width, canvas1.height),
+        material1
+    );
+
+    textmesh1.position.set(0, 0, 0);
+
+    scene.add(textmesh1);
+
+
 }
 
-function onDocumentMouseDown(event) {
-    event.preventDefault();
+function pick(event) {
+    //event.preventDefault();
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+    console.log(mouse);
+
 
     raycaster.setFromCamera(mouse, camera);
-    console.log("click");
-    var intersects = raycaster.intersectObjects(particles);
+    var intersects = raycaster.intersectObject(particles);
+    console.log(intersects);
     if (intersects.length > 0) {
-        var hit = intersects[0].object;
-        console.log("click and hit");
-        var geometry = new THREE.PlaneGeometry();
-        var highlight = new THREE.MeshBasicMaterial(shaderMaterial);
-        highlight.position.set(hit.position);
-        scene.add(highlight);
-
+        var hit = new THREE.Vector3();
+        hit = intersects[0].index;
+        console.log("click and hit at" + hit);
+        //var geometry = new THREE.PlaneGeometry(); 
+        x = geometry.attributes.position.array[hit * 3];
+        y = geometry.attributes.position.array[hit * 3 + 1]
+        z = geometry.attributes.position.array[hit * 3 + 2];
+        sphere.position.set(x, y, z);
+        controls.target.set(x, y, z);
     }
+
+    //scene.add(new THREE.ArrowHelper(raycaster.ray.direction, raycaster.ray.origin, 30000, 0xff0000));
+
 }
 function onWindowResize() {
 
@@ -171,25 +227,76 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 
 }
+function onPointerMove(event) {
+
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+}
 
 
 function animate() {
     controls.update(clock.getDelta());
 
+    /*
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+    console.log(mouse);
+    raycaster.params.Points.threshold = 60;*/
 
+    raycaster.setFromCamera(pointer, camera);
+    var intersects = raycaster.intersectObject(particles);
+    //console.log(intersects);
+    if (intersects.length > 0) {
+        var hit = new THREE.Vector3();
+        hit = intersects[0].index;
+        //console.log("click and hit at" + hit);
+        //var geometry = new THREE.PlaneGeometry();        
+        sphere.position.set(
+            geometry.attributes.position.array[hit * 3],
+            geometry.attributes.position.array[hit * 3 + 1],
+            geometry.attributes.position.array[hit * 3 + 2]);
+
+    }
+    //intersects = raycaster.intersectObject(particles);
+    //console.log(intersects);
+    /*
+       if (intersects.length > 0) {
+           console.log("intersect!!");
+           var hit = intersects[0].object;
+           //console.log("click and hit");
+           var plane = new THREE.PlaneGeometry();
+           var mat = new THREE.MeshBasicMaterial({
+               color: 0x0095DD
+           });
+           var highlight = new THREE.MeshBasicMaterial(plane, mat);
+           highlight.position.set(hit.position);
+           scene.add(highlight);
+           intersects = [];
+       };*/
+
+    textmesh1.lookAt(camera.position);
     requestAnimationFrame(animate);
+
+
     renderer.render(scene, camera);
+
 }
 
 function keyDownTextField(e) {
     var keyCode = e.keyCode;
     if (keyCode == 50) {
         controls.movementSpeed += 5;
-        console.log("lala")
+
     }
     if (keyCode == 49) {
         controls.movementSpeed -= 5;
     }
+    if (keyCode == 48) {
+        //console.log("lala");
+        camera.lookAt(sphere.position);
+    }
+
 
 }
 
