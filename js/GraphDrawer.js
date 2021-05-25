@@ -7,12 +7,10 @@ var mouse = { x: 0, y: 0 };
 
 var shapes, geom, mat, mesh;
 
-
-
 //selector
-var geoSphere, smaterial, sphere, textmesh1;
+var selected, geoSphere, smaterial, sphere, textmesh1;
 
-let pointer;
+let pointer, tooltipTexture;
 
 function vShader() {
     return `
@@ -101,7 +99,7 @@ function init() {
         z = coord[2] * 200 - 100;
         vertices.push(x, y, z);
 
-        color.setHSL(0.8, 0.8, 0.8);
+        color.setHSL(1, 1, 1);
         colors.push(color.r, color.g, color.b);
         sizes.push(150);
     }
@@ -111,7 +109,6 @@ function init() {
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
     shaderMaterial = new THREE.ShaderMaterial({
-
         uniforms: { pointTexture: { value: new THREE.TextureLoader().load("./img/ball.png") } },
         vertexShader: vShader(),
         fragmentShader: fShader(),
@@ -120,7 +117,6 @@ function init() {
         depthTest: false,
         transparent: true,
         vertexColors: true
-
     });
 
     particles = new THREE.Points(geometry, shaderMaterial);
@@ -128,7 +124,6 @@ function init() {
     scene.add(particles);
 
     // lines
-
     var lineGeometry = new THREE.BufferGeometry();
     var indices = [];
     for (var key in graph["edges"]) {
@@ -146,39 +141,40 @@ function init() {
 
     // interactor
     raycaster = new THREE.Raycaster();
-    raycaster.params.Points.threshold = 60;
+    raycaster.params.Points.threshold = 80;
     pointer = new THREE.Vector2();
 
-
-
     // selection 
-
     geoSphere = new THREE.SphereGeometry(22, 32, 32);
     smaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
     sphere = new THREE.Mesh(geoSphere, smaterial);
     scene.add(sphere);
+    selected = -1;
 
-
-    //keyboard listener
+    //keyboard+mouse listeners
     document.addEventListener("keydown", keyDownTextField, false);
     //document.addEventListener('mousedown', onDocumentMouseDown, false);
     document.addEventListener('pointermove', onPointerMove);
 
+    //text tooltip
+    var text = "Place Holder Title Text ";
 
-    //text test
-    var text = "LALALAgthyjutioip;['poiuytrgrtgtr a;lsjdlsajd dljsa \\n lkdjalsjdlaj j dlkajl jdaljdlaj";
+
     var canvas1 = document.createElement('canvas');
+
+    canvas1.setAttribute('width', '800');
+    canvas1.setAttribute('height', '600');
     var context1 = canvas1.getContext('2d');
     context1.font = "Bold 40px Arial";
     context1.fillStyle = "rgba(255,255,0,0.95)";
-    context1.fillText(text, 3, 50);
-
-    var texture1 = new THREE.Texture(canvas1);
-    texture1.needsUpdate = true;
-
-    var material1 = new THREE.MeshBasicMaterial({ map: texture1, side: THREE.DoubleSide });
+    //context1.fillText(text, 3, 50);
+    printAtWordWrap(context1, text, 420, 300, 35, 400);
 
 
+    var tooltipTexture = new THREE.Texture(canvas1);
+    tooltipTexture.needsUpdate = true;
+
+    var material1 = new THREE.MeshBasicMaterial({ map: tooltipTexture });
 
     material1.transparent = true;
 
@@ -190,30 +186,33 @@ function init() {
     textmesh1.position.set(0, 0, 0);
 
     scene.add(textmesh1);
-
-
 }
 
+// interaction event (used by orbitcontrols)
 function pick(event) {
     //event.preventDefault();
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-    console.log(mouse);
+    //console.log(mouse);
 
 
     raycaster.setFromCamera(mouse, camera);
     var intersects = raycaster.intersectObject(particles);
-    console.log(intersects);
+    //console.log(intersects);
     if (intersects.length > 0) {
-        var hit = new THREE.Vector3();
-        hit = intersects[0].index;
-        console.log("click and hit at" + hit);
+        //var hit = new THREE.Vector3();
+        selected = intersects[0].index;
+        console.log("click and hit at: " + selected);
         //var geometry = new THREE.PlaneGeometry(); 
-        x = geometry.attributes.position.array[hit * 3];
-        y = geometry.attributes.position.array[hit * 3 + 1]
-        z = geometry.attributes.position.array[hit * 3 + 2];
+        x = geometry.attributes.position.array[selected * 3];
+        y = geometry.attributes.position.array[selected * 3 + 1]
+        z = geometry.attributes.position.array[selected * 3 + 2];
         sphere.position.set(x, y, z);
         controls.target.set(x, y, z);
+        textmesh1.material.map = tooltipUpdate("lala" + Math.random());
+        textmesh1.material.needsUpdate = true;
+
+        textmesh1.position.set(x, y, z);
     }
 
     //scene.add(new THREE.ArrowHelper(raycaster.ray.direction, raycaster.ray.origin, 30000, 0xff0000));
@@ -238,15 +237,10 @@ function onPointerMove(event) {
 function animate() {
     controls.update(clock.getDelta());
 
-    /*
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-    console.log(mouse);
-    raycaster.params.Points.threshold = 60;*/
-
     raycaster.setFromCamera(pointer, camera);
     var intersects = raycaster.intersectObject(particles);
-    //console.log(intersects);
+
+    //highlight with mouseover
     if (intersects.length > 0) {
         var hit = new THREE.Vector3();
         hit = intersects[0].index;
@@ -258,36 +252,17 @@ function animate() {
             geometry.attributes.position.array[hit * 3 + 2]);
 
     }
-    //intersects = raycaster.intersectObject(particles);
-    //console.log(intersects);
-    /*
-       if (intersects.length > 0) {
-           console.log("intersect!!");
-           var hit = intersects[0].object;
-           //console.log("click and hit");
-           var plane = new THREE.PlaneGeometry();
-           var mat = new THREE.MeshBasicMaterial({
-               color: 0x0095DD
-           });
-           var highlight = new THREE.MeshBasicMaterial(plane, mat);
-           highlight.position.set(hit.position);
-           scene.add(highlight);
-           intersects = [];
-       };*/
 
     textmesh1.lookAt(camera.position);
     requestAnimationFrame(animate);
 
-
     renderer.render(scene, camera);
-
 }
 
 function keyDownTextField(e) {
     var keyCode = e.keyCode;
     if (keyCode == 50) {
         controls.movementSpeed += 5;
-
     }
     if (keyCode == 49) {
         controls.movementSpeed -= 5;
@@ -312,4 +287,59 @@ function loadJSON(callback, jsonfile) {
         }
     };
     xobj.send(null);
+}
+
+function printAtWordWrap(context, text, x, y, lineHeight, fitWidth) {
+    fitWidth = fitWidth || 0;
+
+    if (fitWidth <= 0) {
+        context.fillText(text, x, y);
+        return;
+    }
+    var words = text.split(' ');
+    var currentLine = 0;
+    var idx = 1;
+    while (words.length > 0 && idx <= words.length) {
+        var str = words.slice(0, idx).join(' ');
+        var w = context.measureText(str).width;
+        if (w > fitWidth) {
+            if (idx == 1) {
+                idx = 2;
+            }
+            context.fillText(words.slice(0, idx - 1).join(' '), x, y + (lineHeight * currentLine));
+            currentLine++;
+            words = words.splice(idx - 1);
+            idx = 1;
+        }
+        else { idx++; }
+    }
+    if (idx > 0)
+        context.fillText(words.join(' '), x, y + (lineHeight * currentLine));
+}
+
+function tooltipUpdate(tooltipText) {
+    var canvas1 = document.createElement('canvas');
+
+    canvas1.setAttribute('width', '800');
+    canvas1.setAttribute('height', '600');
+    var context1 = canvas1.getContext('2d');
+
+    context1.font = "Bold 40px Arial";
+    context1.fillStyle = "rgba(255,255,0,0.95)";
+    //context1.fillText(text, 3, 50);
+    printAtWordWrap(context1, tooltipText, 420, 300, 35, 400);
+
+    tooltipTexture = new THREE.Texture(canvas1);
+    tooltipTexture.needsUpdate = true;
+    /*
+    var material1 = new THREE.MeshBasicMaterial({ map: texture1 });
+
+    material1.transparent = true;
+
+    textmesh1 = new THREE.Mesh(
+        new THREE.PlaneGeometry(canvas1.width, canvas1.height),
+        material1
+    );*/
+    return tooltipTexture;
+
 }
