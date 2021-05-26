@@ -54,7 +54,7 @@ let setup_graph = async function () {
         //console.log(typeof graph["nodes"]);
         init();
         animate();
-    }, './gjson.json');
+    }, './gjson4.json');
 };
 setup_graph();
 
@@ -101,7 +101,7 @@ function init() {
 
         color.setHSL(1, 1, 1);
         colors.push(color.r, color.g, color.b);
-        sizes.push(150);
+        sizes.push(100);
     }
 
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
@@ -120,6 +120,7 @@ function init() {
     });
 
     particles = new THREE.Points(geometry, shaderMaterial);
+    particles.renderOrder = 0;
 
     scene.add(particles);
 
@@ -132,11 +133,12 @@ function init() {
         indices.push(myedge[0]);
         indices.push(myedge[1]);
     }
-    var linematerial = new THREE.LineBasicMaterial({ color: 0x999999 });
+    var linematerial = new THREE.LineBasicMaterial({ color: 0x999999, opacity: 0.11, depthTest: false });
     lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
     lineGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1));
-
+    linematerial.transparent = true;
     var lines = new THREE.LineSegments(lineGeometry, linematerial);
+    lines.renderOrder = 0;
     scene.add(lines);
 
     // interactor
@@ -174,7 +176,7 @@ function init() {
     var tooltipTexture = new THREE.Texture(canvas1);
     tooltipTexture.needsUpdate = true;
 
-    var material1 = new THREE.MeshBasicMaterial({ map: tooltipTexture });
+    var material1 = new THREE.MeshBasicMaterial({ map: tooltipTexture, depthTest: true });
 
     material1.transparent = true;
 
@@ -182,6 +184,7 @@ function init() {
         new THREE.PlaneGeometry(canvas1.width, canvas1.height),
         material1
     );
+    textmesh1.renderOrder = 1;
 
     textmesh1.position.set(0, 0, 0);
 
@@ -207,9 +210,12 @@ function pick(event) {
         x = geometry.attributes.position.array[selected * 3];
         y = geometry.attributes.position.array[selected * 3 + 1]
         z = geometry.attributes.position.array[selected * 3 + 2];
+        title = graph["nodes"][selected][3]
+        //
         sphere.position.set(x, y, z);
         controls.target.set(x, y, z);
-        textmesh1.material.map = tooltipUpdate("lala" + Math.random());
+        console.log(title);
+        textmesh1.material.map = tooltipUpdate(title);
         textmesh1.material.needsUpdate = true;
 
         textmesh1.position.set(x, y, z);
@@ -233,7 +239,6 @@ function onPointerMove(event) {
 
 }
 
-
 function animate() {
     controls.update(clock.getDelta());
 
@@ -250,7 +255,6 @@ function animate() {
             geometry.attributes.position.array[hit * 3],
             geometry.attributes.position.array[hit * 3 + 1],
             geometry.attributes.position.array[hit * 3 + 2]);
-
     }
 
     textmesh1.lookAt(camera.position);
@@ -271,8 +275,6 @@ function keyDownTextField(e) {
         //console.log("lala");
         camera.lookAt(sphere.position);
     }
-
-
 }
 
 function loadJSON(callback, jsonfile) {
@@ -331,15 +333,6 @@ function tooltipUpdate(tooltipText) {
 
     tooltipTexture = new THREE.Texture(canvas1);
     tooltipTexture.needsUpdate = true;
-    /*
-    var material1 = new THREE.MeshBasicMaterial({ map: texture1 });
 
-    material1.transparent = true;
-
-    textmesh1 = new THREE.Mesh(
-        new THREE.PlaneGeometry(canvas1.width, canvas1.height),
-        material1
-    );*/
     return tooltipTexture;
-
 }
