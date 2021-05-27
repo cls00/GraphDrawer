@@ -1,4 +1,4 @@
-var scene, renderer, labelRenderer, camera, clock, texture;
+var scene, renderer, labelRenderer, camera, clock, texture, canvas;
 var points, geometry, particles, shaderMaterial;
 var raycaster;
 var quad;
@@ -54,9 +54,10 @@ let setup_graph = async function () {
         //console.log(typeof graph["nodes"]);
         init();
         animate();
-    }, './gjson4.json');
+    }, './gjson2 (6).json');
 };
 setup_graph();
+
 
 
 function init() {
@@ -68,6 +69,8 @@ function init() {
     var height = window.innerHeight;
     renderer.setSize(width, height);
     document.body.appendChild(renderer.domElement);
+    document.getElementById('abstract').textContent += "etc.";
+
 
     scene = new THREE.Scene();
 
@@ -101,7 +104,7 @@ function init() {
 
         color.setHSL(1, 1, 1);
         colors.push(color.r, color.g, color.b);
-        sizes.push(100);
+        sizes.push(coord[4] * 40 + 10);
     }
 
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
@@ -133,7 +136,7 @@ function init() {
         indices.push(myedge[0]);
         indices.push(myedge[1]);
     }
-    var linematerial = new THREE.LineBasicMaterial({ color: 0x999999, opacity: 0.11, depthTest: false });
+    var linematerial = new THREE.LineBasicMaterial({ color: 0x999999, opacity: 0.005, depthTest: false });
     lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
     lineGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1));
     linematerial.transparent = true;
@@ -197,8 +200,6 @@ function pick(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
     //console.log(mouse);
-
-
     raycaster.setFromCamera(mouse, camera);
     var intersects = raycaster.intersectObject(particles);
     //console.log(intersects);
@@ -234,8 +235,10 @@ function onWindowResize() {
 }
 function onPointerMove(event) {
 
-    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
+    canvas = renderer.domElement
+
+    pointer.x = (event.clientX / canvas.innerWidth) * 2 - 1;
+    pointer.y = - (event.clientY / canvas.innerHeight) * 2 + 1;
 
 }
 
@@ -272,9 +275,11 @@ function keyDownTextField(e) {
         controls.movementSpeed -= 5;
     }
     if (keyCode == 48) {
-        //console.log("lala");
+        console.log("lala");
         camera.lookAt(sphere.position);
     }
+
+
 }
 
 function loadJSON(callback, jsonfile) {
