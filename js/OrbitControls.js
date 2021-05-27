@@ -530,6 +530,7 @@ THREE.OrbitControls = function (object, domElement) {
 
 		dollyDelta.subVectors(dollyEnd, dollyStart);
 
+
 		if (dollyDelta.y > 0) {
 
 			dollyOut(getZoomScale());
@@ -583,6 +584,13 @@ THREE.OrbitControls = function (object, domElement) {
 	}
 
 	function handleKeyDown(event) {
+
+		var keyCode = event.keyCode();
+		console.log("key??");
+		if (keyCode == 87) {
+			console.log("lala");
+			window.camera.translateZ(- 5);
+		}
 
 		var needsUpdate = false;
 
@@ -1001,9 +1009,11 @@ THREE.OrbitControls = function (object, domElement) {
 
 	function onKeyDown(event) {
 
+
+
 		if (scope.enabled === false || scope.enablePan === false) return;
 
-		//handleKeyDown(event);
+		handleKeyDown(event);
 
 	}
 
