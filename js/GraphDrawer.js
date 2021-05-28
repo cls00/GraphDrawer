@@ -54,7 +54,7 @@ let setup_graph = async function () {
         //console.log(typeof graph["nodes"]);
         init();
         animate();
-    }, './gjson2 (6).json');
+    }, '/nbextensions/google.colab/GraphDrawer/gjson2 (6).json');
 };
 setup_graph();
 
@@ -66,10 +66,10 @@ function init() {
     //renderer
     renderer = new THREE.WebGLRenderer({ antialias: true });
     var width = window.innerWidth;
-    var height = window.innerHeight;
+    var height = width;
     renderer.setSize(width, height);
     document.body.appendChild(renderer.domElement);
-    document.getElementById('abstract').textContent += "etc.";
+    //document.getElementById('abstract').textContent += "etc.";
 
 
     scene = new THREE.Scene();
@@ -91,7 +91,7 @@ function init() {
     geometry = new THREE.BufferGeometry();
     var vertices = [];
     var sizes = []
-    texture = new THREE.TextureLoader().load("./img/ball.png");
+    texture = new THREE.TextureLoader().load("/nbextensions/google.colab/GraphDrawer/img/ball.png");
     var colors = []
     const color = new THREE.Color();
     for (const property in graph["nodes"]) {
@@ -112,7 +112,7 @@ function init() {
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
     shaderMaterial = new THREE.ShaderMaterial({
-        uniforms: { pointTexture: { value: new THREE.TextureLoader().load("./img/ball.png") } },
+        uniforms: { pointTexture: { value: new THREE.TextureLoader().load("/nbextensions/google.colab/GraphDrawer/img/ball.png") } },
         vertexShader: vShader(),
         fragmentShader: fShader(),
 
